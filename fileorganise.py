@@ -1,5 +1,6 @@
 import os
 import shutil
+from datetime import datetime
 
 # Updated mapping of file extensions to their destination folders
 folder_mapping = {
@@ -43,28 +44,49 @@ folder_mapping = {
     # Add more extensions and destinations as needed
 }
 
-def organize_files(directory):
-    # Check if the directory exists
-    if not os.path.isdir(directory):
-        print(f"The provided path is not a valid directory: {directory}")
-        return
+def create_backup(files, backup_directory):
+    if not os.path.exists(backup_directory):
+        os.makedirs(backup_directory)
     
-    # Determine which folders are needed
+    for filepath in files:
+        if os.path.exists(filepath):
+            relative_path = os.path.relpath(filepath, start=os.path.dirname(filepath))
+            backup_path = os.path.join(backup_directory, relative_path)
+            backup_folder = os.path.dirname(backup_path)
+            
+            if not os.path.exists(backup_folder):
+                os.makedirs(backup_folder)
+            
+            shutil.copy2(filepath, backup_path)
+            print(f"Backed up {filepath} to {backup_path}")
+
+def organize_files(directory):
+    # Define the backup directory with a timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_directory = os.path.join(directory, f"backup_{timestamp}")
+
+    files_to_move = []
+    
+    # Determine which folders are needed and collect files to move
     needed_folders = set()
-    for filename in os.listdir(directory):
-        filepath = os.path.join(directory, filename)
+    for root, dirs, files in os.walk(directory):
+        # Skip directories like 'node_modules'
+        dirs[:] = [d for d in dirs if d.lower() != 'node_modules']
         
-        # Skip directories
-        if os.path.isdir(filepath):
-            continue
-        
-        # Get the file extension
-        _, ext = os.path.splitext(filename)
-        
-        # Determine the destination folder
-        folder = folder_mapping.get(ext.lower())
-        if folder:
-            needed_folders.add(folder)
+        for filename in files:
+            filepath = os.path.join(root, filename)
+            
+            # Get the file extension
+            _, ext = os.path.splitext(filename)
+            
+            # Determine the destination folder
+            folder = folder_mapping.get(ext.lower())
+            if folder:
+                needed_folders.add(folder)
+                files_to_move.append(filepath)
+    
+    # Create backup for files that will be moved
+    create_backup(files_to_move, backup_directory)
     
     # Create folders if they are needed
     for folder in needed_folders:
@@ -73,14 +95,8 @@ def organize_files(directory):
             os.makedirs(folder_path)
     
     # Move files to their respective folders
-    for filename in os.listdir(directory):
-        filepath = os.path.join(directory, filename)
-        
-        # Skip directories
-        if os.path.isdir(filepath):
-            continue
-        
-        # Get the file extension
+    for filepath in files_to_move:
+        _, filename = os.path.split(filepath)
         _, ext = os.path.splitext(filename)
         
         # Determine the destination folder
