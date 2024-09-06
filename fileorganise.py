@@ -49,13 +49,30 @@ def organize_files(directory):
         print(f"The provided path is not a valid directory: {directory}")
         return
     
-    # Create folders if they do not exist
-    for folder in set(folder_mapping.values()):
+    # Determine which folders are needed
+    needed_folders = set()
+    for filename in os.listdir(directory):
+        filepath = os.path.join(directory, filename)
+        
+        # Skip directories
+        if os.path.isdir(filepath):
+            continue
+        
+        # Get the file extension
+        _, ext = os.path.splitext(filename)
+        
+        # Determine the destination folder
+        folder = folder_mapping.get(ext.lower())
+        if folder:
+            needed_folders.add(folder)
+    
+    # Create folders if they are needed
+    for folder in needed_folders:
         folder_path = os.path.join(directory, folder)
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
     
-    # Iterate over files in the directory
+    # Move files to their respective folders
     for filename in os.listdir(directory):
         filepath = os.path.join(directory, filename)
         
@@ -70,12 +87,6 @@ def organize_files(directory):
         folder = folder_mapping.get(ext.lower())
         if folder:
             dest_folder = os.path.join(directory, folder)
-            
-            # Ensure all parent directories exist
-            if not os.path.exists(dest_folder):
-                os.makedirs(dest_folder)
-            
-            # Move the file
             shutil.move(filepath, os.path.join(dest_folder, filename))
             print(f"Moved {filename} to {folder}")
 
