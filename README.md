@@ -21,4 +21,4 @@ This Python script organizes files in a specified directory by moving them into 
    cd File-Organiser
 
 2. Run the script
-`python fileorganise.py`
+`python fileorganise.py [path]`
